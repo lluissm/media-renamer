@@ -1,4 +1,4 @@
-.PHONY: all clean build test
+.PHONY: all clean build test license
 
 all: build test
 
@@ -24,3 +24,8 @@ build:
 test:
 	@echo ">> Running unit tests"
 	go test -cover ./...
+
+# Add missing licenses
+license:
+	@echo ">> Adding missing licenses"
+	curl -s https://raw.githubusercontent.com/lluissm/license-header-checker/master/install.sh | bash && ./bin/license-header-checker -a -r -i testdata ./license_header.txt . go && [[ -z `git status -s` ]]
