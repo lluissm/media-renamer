@@ -14,6 +14,7 @@ delete_sample_project() {
 
 validate_input() {
     # test files exist
+    if [[ ! -f "$PROJECT_DIR/.hidden1.jpeg" ]]; then exit 1; fi
     if [[ ! -f "$PROJECT_DIR/1.jpeg" ]]; then exit 1; fi
     if [[ ! -f "$PROJECT_DIR/2.jpeg" ]]; then exit 1; fi
     if [[ ! -f "$PROJECT_DIR/3.mov" ]]; then exit 1; fi
@@ -22,6 +23,9 @@ validate_input() {
 
 # assert that old files do not exist & new files with dated names exist
 validate_renaming() {
+    # .hidden1.jpeg
+    if [[ ! -f "$PROJECT_DIR/.hidden1.jpeg" ]]; then exit 1; fi
+
     # 1.jpeg
     if [[ -f "$PROJECT_DIR/1.jpeg" ]]; then exit 1; fi
     if [[ ! -f "$PROJECT_DIR/2017_01_15_14_10_35.jpeg" ]]; then exit 1; fi
