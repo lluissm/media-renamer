@@ -28,4 +28,11 @@ test:
 # Add missing licenses
 license:
 	@echo ">> Adding missing licenses"
-	curl -s https://raw.githubusercontent.com/lluissm/license-header-checker/master/install.sh | bash && ./bin/license-header-checker -a -r -i testdata ./license_header.txt . go && [[ -z `git status -s` ]]
+	if [[ ! -f "./bin/license-header-checker" ]]; then curl -s https://raw.githubusercontent.com/lluissm/license-header-checker/master/install.sh | bash; fi
+	./bin/license-header-checker -a -r -i testdata ./license_header.txt . go && [[ -z `git status -s` ]]
+
+# Execute golangci-lint
+lint:
+	@echo ">> Executing golangci-lint"
+	if [[ ! -f "./bin/golangci-lint" ]]; then curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.49.0; fi
+	./bin/golangci-lint run
