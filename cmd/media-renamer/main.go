@@ -25,8 +25,105 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
+	"log"
+	"os"
+	"path/filepath"
+
+	"github.com/barasher/go-exiftool"
+	"github.com/lluissm/media-renamer/internal/rename"
 )
 
 func main() {
-	fmt.Println("Hello world!")
+	path := os.Args[1]
+	if err := iterate(path); err != nil {
+		log.Fatalf("Error intializing exiftool: %v\n", err)
+	}
+}
+
+func iterate(path string) error {
+	et, err := exiftool.NewExiftool()
+	if err != nil {
+		return err
+	}
+	defer et.Close()
+
+	err = filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+
+		processFile(et, path)
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func getDateFromExifKey(path string, key, value interface{}) (string, error) {
+	if filepath.Ext(path) == ".mov" {
+		if key == "CreationDate" {
+			dateStr := fmt.Sprintf("%v", value)
+
+			name, err := rename.NewFileName(rename.DateFormatMOV, dateStr)
+			if err != nil {
+				return "", err
+			}
+
+			return name, nil
+		}
+
+	} else if filepath.Ext(path) == ".jpeg" {
+		if key == "CreateDate" {
+			dateStr := fmt.Sprintf("%v", value)
+
+			name, err := rename.NewFileName(rename.DateFormatJPEG, dateStr)
+			if err != nil {
+				return "", err
+			}
+
+			return name, nil
+		}
+	}
+	return "", fmt.Errorf("creation date not found in %v", key)
+}
+
+func tryRename(path string, fileInfo exiftool.FileMetadata) error {
+	for k, v := range fileInfo.Fields {
+		dateStr, err := getDateFromExifKey(path, k, v)
+		if err == nil {
+			dir, _ := filepath.Split(path)
+			ext := filepath.Ext(path)
+			newPath := fmt.Sprintf("%s%s%s", dir, dateStr, ext)
+
+			if err = os.Rename(path, newPath); err != nil {
+				return fmt.Errorf("Could not rename file %s to %s. %w", path, newPath, err)
+			} else {
+				log.Printf("Renamed %s to %s", path, newPath)
+				return nil
+			}
+		}
+	}
+	return fmt.Errorf("could not find information in metadata for file %s", path)
+}
+
+func processFile(et *exiftool.Exiftool, path string) {
+	fileInfos := et.ExtractMetadata(path)
+
+	for _, fileInfo := range fileInfos {
+		if fileInfo.Err != nil {
+			log.Printf("Error concerning %v: %v\n", fileInfo.File, fileInfo.Err)
+			continue
+		}
+		if err := tryRename(path, fileInfo); err != nil {
+			log.Printf("ERROR: %s", err.Error())
+		}
+	}
 }

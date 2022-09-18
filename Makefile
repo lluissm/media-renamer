@@ -1,4 +1,4 @@
-.PHONY: all clean build test license
+.PHONY: all clean build test test-e2e license
 
 all: build test
 
@@ -24,6 +24,11 @@ build:
 test:
 	@echo ">> Running unit tests"
 	go test -cover ./...
+
+# Run end to end tests
+test-e2e: build
+	@echo ">> Running end to end tests"
+	cd test && bash test.sh ../${BIN_PATH}/${CMD}
 
 # Add missing licenses
 license:
