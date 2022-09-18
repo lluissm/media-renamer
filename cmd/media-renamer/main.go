@@ -74,7 +74,9 @@ func processFile(et *exiftool.Exiftool, path string) {
 					newPath := fmt.Sprintf("%s%s%s", dir, name, ext)
 					fmt.Printf("New path: %s\n\n", newPath)
 
-					os.Rename(path, newPath)
+					if err = os.Rename(path, newPath); err != nil {
+						log.Fatalf("Could not rename file %s to %s", path, newPath)
+					}
 
 				}
 
@@ -101,8 +103,9 @@ func processFile(et *exiftool.Exiftool, path string) {
 					newPath := fmt.Sprintf("%s%s%s", dir, name, ext)
 					fmt.Printf("New path: %s\n\n", newPath)
 
-					os.Rename(path, newPath)
-
+					if err = os.Rename(path, newPath); err != nil {
+						log.Fatalf("Could not rename file %s to %s", path, newPath)
+					}
 				}
 			}
 		}
