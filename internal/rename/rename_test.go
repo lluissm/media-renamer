@@ -36,11 +36,11 @@ func TestNewFileName(t *testing.T) {
 	dateMOV := "2015:07:15 13:56:17+02:00"
 	expectedMOV := "2015_07_15_13_56_17"
 
-	fnameJPEG, err := NewFileName(formatJPEG, dateJPEG)
+	fnameJPEG, err := NewFileName(DateFormatJPEG, dateJPEG)
 	assert.NoError(t, err)
 	assert.Equal(t, fnameJPEG, expectedJPEG)
 
-	fnameMOV, err := NewFileName(formatMOV, dateMOV)
+	fnameMOV, err := NewFileName(DateFormatMOV, dateMOV)
 	assert.NoError(t, err)
 	assert.Equal(t, fnameMOV, expectedMOV)
 }

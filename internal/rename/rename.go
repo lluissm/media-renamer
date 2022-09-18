@@ -28,8 +28,8 @@ import (
 	"time"
 )
 
-const formatJPEG = "2006:01:02 15:04:05"
-const formatMOV = "2006:01:02 15:04:05-07:00"
+const DateFormatJPEG = "2006:01:02 15:04:05"
+const DateFormatMOV = "2006:01:02 15:04:05-07:00"
 
 func NewFileName(dateFormat, date string) (string, error) {
 	parseTime, err := time.Parse(dateFormat, date)
