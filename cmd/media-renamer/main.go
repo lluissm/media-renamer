@@ -29,16 +29,29 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/barasher/go-exiftool"
 	"github.com/lluissm/media-renamer/internal/rename"
 )
+
+var allowedExtensions = [2]string{".jpeg", ".mov"}
 
 func main() {
 	path := os.Args[1]
 	if err := iterate(path); err != nil {
 		log.Fatalf("Error intializing exiftool: %v\n", err)
 	}
+}
+
+func fileNotSupported(path string) bool {
+	fileExtension := filepath.Ext(path)
+	for _, ext := range allowedExtensions {
+		if fileExtension == ext {
+			return false
+		}
+	}
+	return true
 }
 
 func iterate(path string) error {
@@ -54,6 +67,15 @@ func iterate(path string) error {
 		}
 
 		if d.IsDir() {
+			return nil
+		}
+
+		if fileNotSupported(path) {
+			return nil
+		}
+
+		_, filename := filepath.Split(path)
+		if strings.HasPrefix(filename, ".") {
 			return nil
 		}
 
@@ -122,6 +144,7 @@ func processFile(et *exiftool.Exiftool, path string) {
 			log.Printf("Error concerning %v: %v\n", fileInfo.File, fileInfo.Err)
 			continue
 		}
+
 		if err := tryRename(path, fileInfo); err != nil {
 			log.Printf("ERROR: %s", err.Error())
 		}
