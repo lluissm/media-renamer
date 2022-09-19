@@ -30,10 +30,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/barasher/go-exiftool"
 	"github.com/lluissm/media-renamer/internal/config"
-	"github.com/lluissm/media-renamer/internal/rename"
 )
 
 func main() {
@@ -57,10 +57,11 @@ func main() {
 	}
 }
 
+// processFolder process all files in a given path
 func processFolder(et *exiftool.Exiftool, path string) error {
 	err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			log.Fatalf(err.Error())
+			return err
 		}
 
 		if shouldIgnoreFile(path, d) {
@@ -77,15 +78,19 @@ func processFolder(et *exiftool.Exiftool, path string) error {
 	return nil
 }
 
+// shouldIgnoreFile returns true if file should be ignored
 func shouldIgnoreFile(path string, d fs.DirEntry) bool {
+	// Skip if directory
 	if d.IsDir() {
 		return true
 	}
 
+	// Skip if file extension is not supported
 	if fileNotSupported(path) {
 		return true
 	}
 
+	// Skip if hidden file
 	_, filename := filepath.Split(path)
 	if strings.HasPrefix(filename, ".") {
 		return true
@@ -94,6 +99,7 @@ func shouldIgnoreFile(path string, d fs.DirEntry) bool {
 	return false
 }
 
+// processFile tries to rename a file according to its date metadata
 func processFile(et *exiftool.Exiftool, path string) {
 	fileInfos := et.ExtractMetadata(path)
 
@@ -109,11 +115,12 @@ func processFile(et *exiftool.Exiftool, path string) {
 	}
 }
 
+// tryGetDate tries to obtain the date from metadata in a format to be used for the file name
 func tryGetDate(path string, fileType *config.FileType, key, value interface{}) (string, error) {
 	for _, dateField := range fileType.DateFields {
 		if key == dateField.Name {
 			dateStr := fmt.Sprintf("%v", value)
-			name, err := rename.NewFileName(dateField.DateFormat, dateStr)
+			name, err := newFileName(dateField.DateFormat, dateStr)
 			if err != nil {
 				return "", err
 			}
@@ -123,6 +130,7 @@ func tryGetDate(path string, fileType *config.FileType, key, value interface{}) 
 	return "", fmt.Errorf("creation date not found in %v", key)
 }
 
+// tryRename tries to rename a file according to its metadata
 func tryRename(path string, fileInfo exiftool.FileMetadata) error {
 	ext := filepath.Ext(path)
 	fileConfig := config.FileConfig(ext)
@@ -145,6 +153,7 @@ func tryRename(path string, fileInfo exiftool.FileMetadata) error {
 	return fmt.Errorf("could not find information in metadata for file %s", path)
 }
 
+// fileNotSupported returns true if the file extension is not recognized
 func fileNotSupported(path string) bool {
 	fileExtension := filepath.Ext(path)
 	for _, ext := range config.SupportedExtensions() {
@@ -153,4 +162,16 @@ func fileNotSupported(path string) bool {
 		}
 	}
 	return true
+}
+
+// newFileName returns the date formated to be used as a file name
+func newFileName(dateFormat, date string) (string, error) {
+	parseTime, err := time.Parse(dateFormat, date)
+
+	if err != nil {
+		fmt.Println("Error parsing date")
+		return "", err
+	}
+
+	return fmt.Sprintf("%04d_%02d_%02d_%02d_%02d_%02d", parseTime.Year(), parseTime.Month(), parseTime.Day(), parseTime.Hour(), parseTime.Minute(), parseTime.Second()), nil
 }
