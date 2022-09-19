@@ -92,11 +92,7 @@ func shouldIgnoreFile(path string, d fs.DirEntry) bool {
 
 	// Skip if hidden file
 	_, filename := filepath.Split(path)
-	if strings.HasPrefix(filename, ".") {
-		return true
-	}
-
-	return false
+	return strings.HasPrefix(filename, ".")
 }
 
 // processFile tries to rename a file according to its date metadata
