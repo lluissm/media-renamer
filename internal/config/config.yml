@@ -1,0 +1,10 @@
+- extension: ".mov"
+  dateFields:
+    - name: "CreationDate"
+      dateFormat: "2006:01:02 15:04:05-07:00"
+- extension: ".jpeg"
+  dateFields:
+    - name: "KeyThatDoesNotExist"
+      dateFormat: "2006:01:02 15:04:05"
+    - name: "CreateDate"
+      dateFormat: "2006:01:02 15:04:05"

@@ -21,23 +21,57 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-package rename
+package config
 
 import (
+	_ "embed"
 	"fmt"
-	"time"
+
+	"gopkg.in/yaml.v2"
 )
 
-const DateFormatJPEG = "2006:01:02 15:04:05"
-const DateFormatMOV = "2006:01:02 15:04:05-07:00"
+//go:embed config.yml
+var configFile []byte
+var fileTypes []FileType
+var supportedExtensions []string
 
-func NewFileName(dateFormat, date string) (string, error) {
-	parseTime, err := time.Parse(dateFormat, date)
-
-	if err != nil {
-		fmt.Println("Error parsing date")
-		return "", err
+type (
+	DateField struct {
+		Name       string `yaml:"name"`
+		DateFormat string `yaml:"dateFormat"`
 	}
 
-	return fmt.Sprintf("%04d_%02d_%02d_%02d_%02d_%02d", parseTime.Year(), parseTime.Month(), parseTime.Day(), parseTime.Hour(), parseTime.Minute(), parseTime.Second()), nil
+	FileType struct {
+		Extension  string      `yaml:"extension"`
+		DateFields []DateField `yaml:"dateFields"`
+	}
+)
+
+func Unmarshal() error {
+	err := yaml.Unmarshal(configFile, &fileTypes)
+	if err != nil {
+		fmt.Println("error")
+
+		return fmt.Errorf("error unmarshaling the file: %w", err)
+	}
+
+	supportedExtensions = []string{}
+	for _, f := range fileTypes {
+		supportedExtensions = append(supportedExtensions, f.Extension)
+	}
+
+	return nil
+}
+
+func SupportedExtensions() []string {
+	return supportedExtensions
+}
+
+func FileConfig(ext string) *FileType {
+	for _, f := range fileTypes {
+		if f.Extension == ext {
+			return &f
+		}
+	}
+	return nil
 }
