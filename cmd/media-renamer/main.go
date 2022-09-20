@@ -41,19 +41,19 @@ func main() {
 	// Initialize exifTool
 	et, err := exiftool.NewExiftool()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error intializing exiftool: %v\n", err)
 	}
 	defer et.Close()
 
 	// Load configuration
 	cfg, err := config.LoadConfig(configFile)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error loading configuration from file: %v\n", err)
 	}
 
 	// Process folder
 	path := os.Args[1]
 	if err := process.Folder(et, cfg, path); err != nil {
-		log.Fatalf("Error intializing exiftool: %v\n", err)
+		log.Fatalf("Error processing folder %s: %v\n", path, err)
 	}
 }
