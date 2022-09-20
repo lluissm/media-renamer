@@ -45,7 +45,7 @@ func TestNewFileName_JPEG(t *testing.T) {
 	dateJPEG := "2019:08:05 14:12:13"
 	expected := "2019_08_05_14_12_13"
 
-	fnameJPEG, err := NewFileName(DateFormatJPEG, dateJPEG)
+	fnameJPEG, err := newFileName(DateFormatJPEG, dateJPEG)
 	assert.NoError(t, err)
 	assert.Equal(t, fnameJPEG, expected)
 }
@@ -56,7 +56,7 @@ func TestNewFileName_MOV(t *testing.T) {
 	dateMOV := "2015:07:15 13:56:17+02:00"
 	expected := "2015_07_15_13_56_17"
 
-	fnameMOV, err := NewFileName(DateFormatMOV, dateMOV)
+	fnameMOV, err := newFileName(DateFormatMOV, dateMOV)
 	assert.NoError(t, err)
 	assert.Equal(t, fnameMOV, expected)
 }
@@ -66,7 +66,7 @@ func TestNewFileName_Error(t *testing.T) {
 
 	dateMOV := "2015:07:15 13:56:17+02:00"
 
-	_, err := NewFileName(WrongDateFormat, dateMOV)
+	_, err := newFileName(WrongDateFormat, dateMOV)
 	assert.Error(t, err)
 }
 
@@ -96,25 +96,25 @@ func TestShouldIgnoreFile(t *testing.T) {
 
 	// No folder, not hidden, supported extension
 	dirEntry.On("IsDir").Return(false).Once()
-	res := ShouldIgnoreFile(validFilePath, dirEntry)
+	res := shouldIgnoreFile(validFilePath, dirEntry)
 	assert.False(t, res)
 	dirEntry.AssertExpectations(t)
 
 	// No folder, not hidden, non-supported extension
 	dirEntry.On("IsDir").Return(false).Once()
-	res = ShouldIgnoreFile(validFilePathWrongExtension, dirEntry)
+	res = shouldIgnoreFile(validFilePathWrongExtension, dirEntry)
 	assert.True(t, res)
 	dirEntry.AssertExpectations(t)
 
 	// No folder, hidden, supported extension
 	dirEntry.On("IsDir").Return(false).Once()
-	res = ShouldIgnoreFile(hiddenFilePath, dirEntry)
+	res = shouldIgnoreFile(hiddenFilePath, dirEntry)
 	assert.True(t, res)
 	dirEntry.AssertExpectations(t)
 
 	// A folder
 	dirEntry.On("IsDir").Return(true).Once()
-	res = ShouldIgnoreFile(validFilePath, dirEntry)
+	res = shouldIgnoreFile(validFilePath, dirEntry)
 	assert.True(t, res)
 	dirEntry.AssertExpectations(t)
 }
