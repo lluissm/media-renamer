@@ -24,14 +24,12 @@ SOFTWARE.
 package config
 
 import (
-	_ "embed"
 	"fmt"
+	"path/filepath"
 
 	"gopkg.in/yaml.v2"
 )
 
-//go:embed config.yml
-var configFile []byte
 var fileTypes []FileType
 var supportedExtensions []string
 
@@ -47,11 +45,10 @@ type (
 	}
 )
 
-func Unmarshal() error {
-	err := yaml.Unmarshal(configFile, &fileTypes)
+// Load loads the configuration from the provided yaml file
+func Load(bytes []byte) error {
+	err := yaml.Unmarshal(bytes, &fileTypes)
 	if err != nil {
-		fmt.Println("error")
-
 		return fmt.Errorf("error unmarshaling the file: %w", err)
 	}
 
@@ -63,15 +60,23 @@ func Unmarshal() error {
 	return nil
 }
 
-func SupportedExtensions() []string {
-	return supportedExtensions
-}
-
-func FileConfig(ext string) *FileType {
+// FileConfig returns the configuration for a given extension, error if not found
+func FileConfig(ext string) (*FileType, error) {
 	for _, f := range fileTypes {
 		if f.Extension == ext {
-			return &f
+			return &f, nil
 		}
 	}
-	return nil
+	return nil, fmt.Errorf("could not find a configuration for the given extension")
+}
+
+// FileIsSupported returns true if the file extension is present in the config
+func FileIsSupported(path string) bool {
+	fileExtension := filepath.Ext(path)
+	for _, ext := range supportedExtensions {
+		if fileExtension == ext {
+			return true
+		}
+	}
+	return false
 }

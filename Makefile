@@ -25,6 +25,12 @@ test:
 	@echo ">> Running unit tests"
 	go test -cover ./...
 
+# Run unit tests with html coverage report
+test-cover:
+	@echo ">> Running unit tests"
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out
+
 # Run end to end tests
 test-e2e: build
 	@echo ">> Running end to end tests"
