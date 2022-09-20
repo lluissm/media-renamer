@@ -38,6 +38,16 @@ import (
 	"github.com/lluissm/media-renamer/internal/config"
 )
 
+type Renamer interface {
+	Rename(oldpath string, newpath string) error
+}
+
+type osRenamer struct{}
+
+func (r *osRenamer) Rename(oldpath string, newpath string) error {
+	return os.Rename(oldpath, newpath)
+}
+
 // process.Folder processes all files in a given path
 func Folder(et *exiftool.Exiftool, cfg *config.Config, path string) error {
 	err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
@@ -69,7 +79,7 @@ func processFile(et *exiftool.Exiftool, cfg *config.Config, path string) {
 			continue
 		}
 
-		if err := tryRename(path, cfg, fileInfo); err != nil {
+		if err := tryRename(path, cfg, &osRenamer{}, fileInfo); err != nil {
 			log.Printf("Error renaming %s", err.Error())
 		}
 	}
@@ -91,7 +101,7 @@ func tryGetDate(path string, fileType *config.FileType, key, value interface{}) 
 }
 
 // tryRename tries to rename a file according to its metadata
-func tryRename(path string, cfg *config.Config, fileInfo exiftool.FileMetadata) error {
+func tryRename(path string, cfg *config.Config, renamer Renamer, fileInfo exiftool.FileMetadata) error {
 	ext := filepath.Ext(path)
 	fileConfig, err := cfg.FileConfig(ext)
 	if err != nil {
@@ -105,7 +115,7 @@ func tryRename(path string, cfg *config.Config, fileInfo exiftool.FileMetadata) 
 			ext := filepath.Ext(path)
 			newPath := fmt.Sprintf("%s%s%s", dir, dateStr, ext)
 
-			if err = os.Rename(path, newPath); err != nil {
+			if err = renamer.Rename(path, newPath); err != nil {
 				return fmt.Errorf("Could not rename file %s to %s. %w", path, newPath, err)
 			} else {
 				log.Printf("Renamed %s to %s", path, newPath)
