@@ -25,10 +25,12 @@ package process
 
 import (
 	_ "embed"
-
+	"errors"
 	"os"
+
 	"testing"
 
+	"github.com/barasher/go-exiftool"
 	"github.com/lluissm/media-renamer/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -37,7 +39,133 @@ import (
 //go:embed testdata/config.yml
 var configFile []byte
 
-// NewFileName
+func getTestConfig() *config.Config {
+	cfg, err := config.LoadConfig(configFile)
+	if err == nil {
+		return cfg
+	}
+	return nil
+}
+
+///////////////////////////////////
+//			tryGetDate
+///////////////////////////////////
+
+func TestTryGetDate_Success(t *testing.T) {
+	path := "IMG_0001.jpeg"
+	key := "CreateDate"
+	value := "2019:08:05 14:12:13"
+	expected := "2019_08_05_14_12_13"
+
+	fileConfig, err := getTestConfig().FileConfig(".jpeg")
+	assert.NoError(t, err)
+
+	date, err := tryGetDate(path, fileConfig, key, value)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, date)
+}
+
+func TestTryGetDate_ErrorDateNotExisting(t *testing.T) {
+	path := "IMG_0001.jpg"
+	key := "WrongKey"
+	value := "2019:08:05 14:12:13"
+
+	fileConfig, err := getTestConfig().FileConfig(".jpeg")
+	assert.NoError(t, err)
+
+	_, err = tryGetDate(path, fileConfig, key, value)
+	assert.Error(t, err)
+}
+
+func TestTryGetDate_ErrorCannotParseDate(t *testing.T) {
+	path := "IMG_0001.jpg"
+	key := "CreateDate"
+	value := "2022"
+
+	fileConfig, err := getTestConfig().FileConfig(".jpeg")
+	assert.NoError(t, err)
+
+	_, err = tryGetDate(path, fileConfig, key, value)
+	assert.Error(t, err)
+}
+
+///////////////////////////////////
+//			tryRename
+///////////////////////////////////
+
+// renamerMock mocks process.Renamer
+type renamerMock struct {
+	mock.Mock
+}
+
+func (d *renamerMock) Rename(oldpath string, newpath string) error {
+	args := d.Called(oldpath, newpath)
+	return args.Error(0)
+}
+
+func TestTryRename_Success(t *testing.T) {
+	cfg := getTestConfig()
+	path := "IMG_0001.jpeg"
+	renamer := renamerMock{}
+	fileInfo := &exiftool.FileMetadata{
+		File:   path,
+		Fields: map[string]interface{}{"CreateDate": "2019:08:05 14:12:13"},
+		Err:    nil,
+	}
+
+	renamer.On("Rename", path, mock.Anything).Return(nil).Once()
+	err := tryRename(path, cfg, &renamer, *fileInfo)
+	assert.NoError(t, err)
+	renamer.AssertExpectations(t)
+}
+
+func TestTryRename_ErrorRenaming(t *testing.T) {
+	cfg := getTestConfig()
+	path := "IMG_0001.jpeg"
+	renamer := renamerMock{}
+	fileInfo := &exiftool.FileMetadata{
+		File:   path,
+		Fields: map[string]interface{}{"CreateDate": "2019:08:05 14:12:13"},
+		Err:    nil,
+	}
+
+	renamer.On("Rename", path, mock.Anything).Return(errors.New("error renaming")).Once()
+	err := tryRename(path, cfg, &renamer, *fileInfo)
+	assert.Error(t, err)
+	renamer.AssertExpectations(t)
+}
+
+func TestTryRename_ErrorCannotFindDate(t *testing.T) {
+	cfg := getTestConfig()
+	path := "IMG_0001.jpeg"
+	renamer := renamerMock{}
+	fileInfo := &exiftool.FileMetadata{
+		File:   path,
+		Fields: map[string]interface{}{"AnotherKey": "2019:08:05 14:12:13"},
+		Err:    nil,
+	}
+
+	err := tryRename(path, cfg, &renamer, *fileInfo)
+	assert.Error(t, err)
+}
+
+func TestTryRename_ErrorWrongExtension(t *testing.T) {
+	cfg := getTestConfig()
+	path := "IMG_0001.png"
+	renamer := renamerMock{}
+	fileInfo := &exiftool.FileMetadata{
+		File:   path,
+		Fields: map[string]interface{}{"AnotherKey": "2019:08:05 14:12:13"},
+		Err:    nil,
+	}
+
+	err := tryRename(path, cfg, &renamer, *fileInfo)
+	assert.Error(t, err)
+}
+
+///////////////////////////////////
+//			NewFileName
+///////////////////////////////////
 
 func TestNewFileName_JPEG(t *testing.T) {
 	DateFormatJPEG := "2006:01:02 15:04:05"
@@ -70,7 +198,9 @@ func TestNewFileName_Error(t *testing.T) {
 	assert.Error(t, err)
 }
 
-// fileNotSupported
+///////////////////////////////////
+//			shouldIgnoreFile
+///////////////////////////////////
 
 // dirEntryMock mocks fs.DirEntry
 type dirEntryMock struct {
@@ -86,8 +216,7 @@ func (d *dirEntryMock) Type() os.FileMode          { return 0 }
 func (d *dirEntryMock) Info() (os.FileInfo, error) { return nil, nil }
 
 func TestShouldIgnoreFile(t *testing.T) {
-	cfg, err := config.LoadConfig(configFile)
-	assert.NoError(t, err)
+	cfg := getTestConfig()
 
 	dirEntry := &dirEntryMock{}
 	hiddenFilePath := ".hidden.jpeg"
