@@ -46,7 +46,8 @@ func TestLoad_Error(t *testing.T) {
 }
 
 func TestSupportedExtensions(t *testing.T) {
-	Load(configFile)
+	err := Load(configFile)
+	assert.NoError(t, err)
 
 	// Supported extensions are properly parsed
 	extensions := SupportedExtensions()
@@ -56,7 +57,8 @@ func TestSupportedExtensions(t *testing.T) {
 }
 
 func TestFileConfig_Success(t *testing.T) {
-	Load(configFile)
+	err := Load(configFile)
+	assert.NoError(t, err)
 
 	// Can obtain the config for a given extension
 	fileConfig, err := FileConfig(".jpeg")
@@ -68,8 +70,9 @@ func TestFileConfig_Success(t *testing.T) {
 }
 
 func TestFileConfig_Error(t *testing.T) {
-	Load(configFile)
+	err := Load(configFile)
+	assert.NoError(t, err)
 
-	_, err := FileConfig(".docx")
+	_, err = FileConfig(".docx")
 	assert.Error(t, err)
 }
