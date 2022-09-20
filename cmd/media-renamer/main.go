@@ -32,10 +32,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/barasher/go-exiftool"
 	"github.com/lluissm/media-renamer/internal/config"
+	"github.com/lluissm/media-renamer/internal/process"
 )
 
 //go:embed config.yml
@@ -121,7 +121,7 @@ func tryGetDate(path string, fileType *config.FileType, key, value interface{}) 
 	for _, dateField := range fileType.DateFields {
 		if key == dateField.Name {
 			dateStr := fmt.Sprintf("%v", value)
-			name, err := newFileName(dateField.DateFormat, dateStr)
+			name, err := process.NewFileName(dateField.DateFormat, dateStr)
 			if err != nil {
 				return "", err
 			}
@@ -166,16 +166,4 @@ func fileNotSupported(path string) bool {
 		}
 	}
 	return true
-}
-
-// newFileName returns the date formated to be used as a file name
-func newFileName(dateFormat, date string) (string, error) {
-	parseTime, err := time.Parse(dateFormat, date)
-
-	if err != nil {
-		fmt.Println("Error parsing date")
-		return "", err
-	}
-
-	return fmt.Sprintf("%04d_%02d_%02d_%02d_%02d_%02d", parseTime.Year(), parseTime.Month(), parseTime.Day(), parseTime.Hour(), parseTime.Minute(), parseTime.Second()), nil
 }
