@@ -37,7 +37,30 @@ import (
 //go:embed testdata/config.yml
 var configFile []byte
 
-// NewFileName
+// dirEntryMock mocks fs.DirEntry
+type dirEntryMock struct {
+	mock.Mock
+}
+
+func (d *dirEntryMock) IsDir() bool {
+	args := d.Called()
+	return args.Get(0).(bool)
+}
+func (d *dirEntryMock) Name() string               { return "" }
+func (d *dirEntryMock) Type() os.FileMode          { return 0 }
+func (d *dirEntryMock) Info() (os.FileInfo, error) { return nil, nil }
+
+func getTestConfig() *config.Config {
+	cfg, err := config.LoadConfig(configFile)
+	if err == nil {
+		return cfg
+	}
+	return nil
+}
+
+///////////////////////////////////
+//			NewFileName
+///////////////////////////////////
 
 func TestNewFileName_JPEG(t *testing.T) {
 	DateFormatJPEG := "2006:01:02 15:04:05"
@@ -70,24 +93,12 @@ func TestNewFileName_Error(t *testing.T) {
 	assert.Error(t, err)
 }
 
-// fileNotSupported
-
-// dirEntryMock mocks fs.DirEntry
-type dirEntryMock struct {
-	mock.Mock
-}
-
-func (d *dirEntryMock) IsDir() bool {
-	args := d.Called()
-	return args.Get(0).(bool)
-}
-func (d *dirEntryMock) Name() string               { return "" }
-func (d *dirEntryMock) Type() os.FileMode          { return 0 }
-func (d *dirEntryMock) Info() (os.FileInfo, error) { return nil, nil }
+///////////////////////////////////
+//			shouldIgnoreFile
+///////////////////////////////////
 
 func TestShouldIgnoreFile(t *testing.T) {
-	cfg, err := config.LoadConfig(configFile)
-	assert.NoError(t, err)
+	cfg := getTestConfig()
 
 	dirEntry := &dirEntryMock{}
 	hiddenFilePath := ".hidden.jpeg"
@@ -117,4 +128,46 @@ func TestShouldIgnoreFile(t *testing.T) {
 	res = shouldIgnoreFile(validFilePath, cfg, dirEntry)
 	assert.True(t, res)
 	dirEntry.AssertExpectations(t)
+}
+
+///////////////////////////////////
+//			tryGetDate
+///////////////////////////////////
+
+func TestTryGetDate_Success(t *testing.T) {
+	path := "IMG_0001.jpeg"
+	key := "CreateDate"
+	value := "2019:08:05 14:12:13"
+	expected := "2019_08_05_14_12_13"
+
+	fileConfig, err := getTestConfig().FileConfig(".jpeg")
+	assert.NoError(t, err)
+
+	date, err := tryGetDate(path, fileConfig, key, value)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, date)
+}
+
+func TestTryGetDate_ErrorDateNotExisting(t *testing.T) {
+	path := "IMG_0001.jpg"
+	key := "WrongKey"
+	value := "2019:08:05 14:12:13"
+
+	fileConfig, err := getTestConfig().FileConfig(".jpeg")
+	assert.NoError(t, err)
+
+	_, err = tryGetDate(path, fileConfig, key, value)
+	assert.Error(t, err)
+}
+
+func TestTryGetDate_ErrorCannotParseDate(t *testing.T) {
+	path := "IMG_0001.jpg"
+	key := "CreateDate"
+	value := "2022"
+
+	fileConfig, err := getTestConfig().FileConfig(".jpeg")
+	assert.NoError(t, err)
+
+	_, err = tryGetDate(path, fileConfig, key, value)
+	assert.Error(t, err)
 }
