@@ -31,7 +31,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/barasher/go-exiftool"
 	"github.com/lluissm/media-renamer/internal/config"
@@ -69,7 +68,7 @@ func processFolder(et *exiftool.Exiftool, path string) error {
 			return err
 		}
 
-		if shouldIgnoreFile(path, d) {
+		if process.ShouldIgnoreFile(path, d) {
 			return nil
 		}
 
@@ -81,23 +80,6 @@ func processFolder(et *exiftool.Exiftool, path string) error {
 		return err
 	}
 	return nil
-}
-
-// shouldIgnoreFile returns true if file should be ignored
-func shouldIgnoreFile(path string, d fs.DirEntry) bool {
-	// Skip if directory
-	if d.IsDir() {
-		return true
-	}
-
-	// Skip if file extension is not supported
-	if fileNotSupported(path) {
-		return true
-	}
-
-	// Skip if hidden file
-	_, filename := filepath.Split(path)
-	return strings.HasPrefix(filename, ".")
 }
 
 // processFile tries to rename a file according to its date metadata
@@ -155,15 +137,4 @@ func tryRename(path string, fileInfo exiftool.FileMetadata) error {
 		}
 	}
 	return fmt.Errorf("could not find information in metadata for file %s", path)
-}
-
-// fileNotSupported returns true if the file extension is not recognized
-func fileNotSupported(path string) bool {
-	fileExtension := filepath.Ext(path)
-	for _, ext := range config.SupportedExtensions() {
-		if fileExtension == ext {
-			return false
-		}
-	}
-	return true
 }

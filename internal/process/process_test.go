@@ -24,10 +24,20 @@ SOFTWARE.
 package process
 
 import (
+	_ "embed"
+
+	"os"
 	"testing"
 
+	"github.com/lluissm/media-renamer/internal/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
+
+//go:embed testdata/config.yml
+var configFile []byte
+
+// NewFileName
 
 func TestNewFileName_JPEG(t *testing.T) {
 	DateFormatJPEG := "2006:01:02 15:04:05"
@@ -58,4 +68,53 @@ func TestNewFileName_Error(t *testing.T) {
 
 	_, err := NewFileName(WrongDateFormat, dateMOV)
 	assert.Error(t, err)
+}
+
+// fileNotSupported
+
+// dirEntryMock mocks fs.DirEntry
+type dirEntryMock struct {
+	mock.Mock
+}
+
+func (d *dirEntryMock) IsDir() bool {
+	args := d.Called()
+	return args.Get(0).(bool)
+}
+func (d *dirEntryMock) Name() string               { return "" }
+func (d *dirEntryMock) Type() os.FileMode          { return 0 }
+func (d *dirEntryMock) Info() (os.FileInfo, error) { return nil, nil }
+
+func TestShouldIgnoreFile(t *testing.T) {
+	err := config.Load(configFile)
+	assert.NoError(t, err)
+
+	dirEntry := &dirEntryMock{}
+	hiddenFilePath := ".hidden.jpeg"
+	validFilePath := "IMG001.jpeg"
+	validFilePathWrongExtension := "document.docx"
+
+	// No folder, not hidden, supported extension
+	dirEntry.On("IsDir").Return(false).Once()
+	res := ShouldIgnoreFile(validFilePath, dirEntry)
+	assert.False(t, res)
+	dirEntry.AssertExpectations(t)
+
+	// No folder, not hidden, non-supported extension
+	dirEntry.On("IsDir").Return(false).Once()
+	res = ShouldIgnoreFile(validFilePathWrongExtension, dirEntry)
+	assert.True(t, res)
+	dirEntry.AssertExpectations(t)
+
+	// No folder, hidden, supported extension
+	dirEntry.On("IsDir").Return(false).Once()
+	res = ShouldIgnoreFile(hiddenFilePath, dirEntry)
+	assert.True(t, res)
+	dirEntry.AssertExpectations(t)
+
+	// A folder
+	dirEntry.On("IsDir").Return(true).Once()
+	res = ShouldIgnoreFile(validFilePath, dirEntry)
+	assert.True(t, res)
+	dirEntry.AssertExpectations(t)
 }

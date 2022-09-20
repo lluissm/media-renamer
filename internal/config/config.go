@@ -25,6 +25,7 @@ package config
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"gopkg.in/yaml.v2"
 )
@@ -69,4 +70,15 @@ func FileConfig(ext string) (*FileType, error) {
 		}
 	}
 	return nil, fmt.Errorf("could not find a configuration for the given extension")
+}
+
+// FileIsSupported returns true if the file extension is present in the config
+func FileIsSupported(path string) bool {
+	fileExtension := filepath.Ext(path)
+	for _, ext := range SupportedExtensions() {
+		if fileExtension == ext {
+			return true
+		}
+	}
+	return false
 }

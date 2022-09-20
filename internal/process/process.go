@@ -25,9 +25,14 @@ package process
 
 import (
 	_ "embed"
+	"io/fs"
+	"path/filepath"
+	"strings"
 
 	"fmt"
 	"time"
+
+	"github.com/lluissm/media-renamer/internal/config"
 )
 
 // NewFileName returns the date formated to be used as a file name
@@ -40,4 +45,21 @@ func NewFileName(dateFormat, date string) (string, error) {
 	}
 
 	return fmt.Sprintf("%04d_%02d_%02d_%02d_%02d_%02d", parseTime.Year(), parseTime.Month(), parseTime.Day(), parseTime.Hour(), parseTime.Minute(), parseTime.Second()), nil
+}
+
+// ShouldIgnoreFile returns true if file should be ignored
+func ShouldIgnoreFile(path string, d fs.DirEntry) bool {
+	// Skip if directory
+	if d.IsDir() {
+		return true
+	}
+
+	// Skip if file extension is not supported
+	if !config.FileIsSupported(path) {
+		return true
+	}
+
+	// Skip if hidden file
+	_, filename := filepath.Split(path)
+	return strings.HasPrefix(filename, ".")
 }

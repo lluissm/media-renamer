@@ -76,3 +76,12 @@ func TestFileConfig_Error(t *testing.T) {
 	_, err = FileConfig(".docx")
 	assert.Error(t, err)
 }
+
+func TestFileIsSupported(t *testing.T) {
+	err := Load(configFile)
+	assert.NoError(t, err)
+
+	assert.True(t, FileIsSupported("file.mov"))
+	assert.True(t, FileIsSupported("file.jpeg"))
+	assert.False(t, FileIsSupported("file.docx"))
+}
