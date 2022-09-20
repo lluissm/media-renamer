@@ -46,14 +46,14 @@ func main() {
 	defer et.Close()
 
 	// Load configuration
-	err = config.Load(configFile)
+	cfg, err := config.LoadConfig(configFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Process folder
 	path := os.Args[1]
-	if err := process.Folder(et, path); err != nil {
+	if err := process.Folder(et, cfg, path); err != nil {
 		log.Fatalf("Error intializing exiftool: %v\n", err)
 	}
 }
