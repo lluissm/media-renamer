@@ -24,6 +24,8 @@ SOFTWARE.
 package main
 
 import (
+	_ "embed"
+
 	"fmt"
 	"io/fs"
 	"log"
@@ -36,6 +38,9 @@ import (
 	"github.com/lluissm/media-renamer/internal/config"
 )
 
+//go:embed config.yml
+var configFile []byte
+
 func main() {
 	// Initialize exifTool
 	et, err := exiftool.NewExiftool()
@@ -45,7 +50,7 @@ func main() {
 	defer et.Close()
 
 	// Load configuration
-	err = config.Unmarshal()
+	err = config.Load(configFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -129,7 +134,10 @@ func tryGetDate(path string, fileType *config.FileType, key, value interface{}) 
 // tryRename tries to rename a file according to its metadata
 func tryRename(path string, fileInfo exiftool.FileMetadata) error {
 	ext := filepath.Ext(path)
-	fileConfig := config.FileConfig(ext)
+	fileConfig, err := config.FileConfig(ext)
+	if err != nil {
+		return err
+	}
 
 	for k, v := range fileInfo.Fields {
 		dateStr, err := tryGetDate(path, fileConfig, k, v)
