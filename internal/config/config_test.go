@@ -35,22 +35,29 @@ var configFile []byte
 
 func TestLoad_Success(t *testing.T) {
 	// Load valid yml file returns no error
-	err := Load(configFile)
+	_, err := LoadConfig(configFile)
 	assert.NoError(t, err)
 }
 
 func TestLoad_Error(t *testing.T) {
 	// Load invalid file returns error
-	err := Load([]byte("bad_file"))
+	_, err := LoadConfig([]byte("bad_file"))
 	assert.Error(t, err)
 }
 
+func getTestConfig() *Config {
+	cfg, err := LoadConfig(configFile)
+	if err == nil {
+		return cfg
+	}
+	return nil
+}
+
 func TestFileConfig_Success(t *testing.T) {
-	err := Load(configFile)
-	assert.NoError(t, err)
+	cfg := getTestConfig()
 
 	// Can obtain the config for a given extension
-	fileConfig, err := FileConfig(".jpeg")
+	fileConfig, err := cfg.FileConfig(".jpeg")
 	assert.NoError(t, err)
 	assert.Equal(t, ".jpeg", fileConfig.Extension)
 	assert.Equal(t, 2, len(fileConfig.DateFields))
@@ -59,18 +66,16 @@ func TestFileConfig_Success(t *testing.T) {
 }
 
 func TestFileConfig_Error(t *testing.T) {
-	err := Load(configFile)
-	assert.NoError(t, err)
+	cfg := getTestConfig()
 
-	_, err = FileConfig(".docx")
+	_, err := cfg.FileConfig(".docx")
 	assert.Error(t, err)
 }
 
 func TestFileIsSupported(t *testing.T) {
-	err := Load(configFile)
-	assert.NoError(t, err)
+	cfg := getTestConfig()
 
-	assert.True(t, FileIsSupported("file.mov"))
-	assert.True(t, FileIsSupported("file.jpeg"))
-	assert.False(t, FileIsSupported("file.docx"))
+	assert.True(t, cfg.FileIsSupported("file.mov"))
+	assert.True(t, cfg.FileIsSupported("file.jpeg"))
+	assert.False(t, cfg.FileIsSupported("file.docx"))
 }

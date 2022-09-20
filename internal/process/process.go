@@ -39,17 +39,17 @@ import (
 )
 
 // process.Folder processes all files in a given path
-func Folder(et *exiftool.Exiftool, path string) error {
+func Folder(et *exiftool.Exiftool, cfg *config.Config, path string) error {
 	err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if shouldIgnoreFile(path, d) {
+		if shouldIgnoreFile(path, cfg, d) {
 			return nil
 		}
 
-		processFile(et, path)
+		processFile(et, cfg, path)
 		return nil
 	})
 
@@ -60,7 +60,7 @@ func Folder(et *exiftool.Exiftool, path string) error {
 }
 
 // processFile tries to rename a file according to its date metadata
-func processFile(et *exiftool.Exiftool, path string) {
+func processFile(et *exiftool.Exiftool, cfg *config.Config, path string) {
 	fileInfos := et.ExtractMetadata(path)
 
 	for _, fileInfo := range fileInfos {
@@ -69,7 +69,7 @@ func processFile(et *exiftool.Exiftool, path string) {
 			continue
 		}
 
-		if err := tryRename(path, fileInfo); err != nil {
+		if err := tryRename(path, cfg, fileInfo); err != nil {
 			log.Printf("Error renaming %s", err.Error())
 		}
 	}
@@ -91,9 +91,9 @@ func tryGetDate(path string, fileType *config.FileType, key, value interface{}) 
 }
 
 // tryRename tries to rename a file according to its metadata
-func tryRename(path string, fileInfo exiftool.FileMetadata) error {
+func tryRename(path string, cfg *config.Config, fileInfo exiftool.FileMetadata) error {
 	ext := filepath.Ext(path)
-	fileConfig, err := config.FileConfig(ext)
+	fileConfig, err := cfg.FileConfig(ext)
 	if err != nil {
 		return err
 	}
@@ -130,14 +130,14 @@ func newFileName(dateFormat, date string) (string, error) {
 
 // shouldIgnoreFile returns true if the file is a folder, its extension is
 // not supported or is a hidden file (starts with .)
-func shouldIgnoreFile(path string, d fs.DirEntry) bool {
+func shouldIgnoreFile(path string, cfg *config.Config, d fs.DirEntry) bool {
 	// Skip if directory
 	if d.IsDir() {
 		return true
 	}
 
 	// Skip if file extension is not supported
-	if !config.FileIsSupported(path) {
+	if !cfg.FileIsSupported(path) {
 		return true
 	}
 

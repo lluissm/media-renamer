@@ -30,10 +30,12 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-var fileTypes []FileType
-var supportedExtensions []string
-
 type (
+	Config struct {
+		fileTypes           []FileType
+		supportedExtensions []string
+	}
+
 	DateField struct {
 		Name       string `yaml:"name"`
 		DateFormat string `yaml:"dateFormat"`
@@ -46,23 +48,27 @@ type (
 )
 
 // Load loads the configuration from the provided yaml file
-func Load(bytes []byte) error {
+func LoadConfig(bytes []byte) (*Config, error) {
+	var fileTypes []FileType
 	err := yaml.Unmarshal(bytes, &fileTypes)
 	if err != nil {
-		return fmt.Errorf("error unmarshaling the file: %w", err)
+		return nil, fmt.Errorf("error unmarshaling the file: %w", err)
 	}
 
-	supportedExtensions = []string{}
+	supportedExtensions := []string{}
 	for _, f := range fileTypes {
 		supportedExtensions = append(supportedExtensions, f.Extension)
 	}
 
-	return nil
+	return &Config{
+		fileTypes:           fileTypes,
+		supportedExtensions: supportedExtensions,
+	}, nil
 }
 
 // FileConfig returns the configuration for a given extension, error if not found
-func FileConfig(ext string) (*FileType, error) {
-	for _, f := range fileTypes {
+func (c *Config) FileConfig(ext string) (*FileType, error) {
+	for _, f := range c.fileTypes {
 		if f.Extension == ext {
 			return &f, nil
 		}
@@ -71,9 +77,9 @@ func FileConfig(ext string) (*FileType, error) {
 }
 
 // FileIsSupported returns true if the file extension is present in the config
-func FileIsSupported(path string) bool {
+func (c *Config) FileIsSupported(path string) bool {
 	fileExtension := filepath.Ext(path)
-	for _, ext := range supportedExtensions {
+	for _, ext := range c.supportedExtensions {
 		if fileExtension == ext {
 			return true
 		}

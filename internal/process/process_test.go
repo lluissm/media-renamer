@@ -86,7 +86,7 @@ func (d *dirEntryMock) Type() os.FileMode          { return 0 }
 func (d *dirEntryMock) Info() (os.FileInfo, error) { return nil, nil }
 
 func TestShouldIgnoreFile(t *testing.T) {
-	err := config.Load(configFile)
+	cfg, err := config.LoadConfig(configFile)
 	assert.NoError(t, err)
 
 	dirEntry := &dirEntryMock{}
@@ -96,25 +96,25 @@ func TestShouldIgnoreFile(t *testing.T) {
 
 	// No folder, not hidden, supported extension
 	dirEntry.On("IsDir").Return(false).Once()
-	res := shouldIgnoreFile(validFilePath, dirEntry)
+	res := shouldIgnoreFile(validFilePath, cfg, dirEntry)
 	assert.False(t, res)
 	dirEntry.AssertExpectations(t)
 
 	// No folder, not hidden, non-supported extension
 	dirEntry.On("IsDir").Return(false).Once()
-	res = shouldIgnoreFile(validFilePathWrongExtension, dirEntry)
+	res = shouldIgnoreFile(validFilePathWrongExtension, cfg, dirEntry)
 	assert.True(t, res)
 	dirEntry.AssertExpectations(t)
 
 	// No folder, hidden, supported extension
 	dirEntry.On("IsDir").Return(false).Once()
-	res = shouldIgnoreFile(hiddenFilePath, dirEntry)
+	res = shouldIgnoreFile(hiddenFilePath, cfg, dirEntry)
 	assert.True(t, res)
 	dirEntry.AssertExpectations(t)
 
 	// A folder
 	dirEntry.On("IsDir").Return(true).Once()
-	res = shouldIgnoreFile(validFilePath, dirEntry)
+	res = shouldIgnoreFile(validFilePath, cfg, dirEntry)
 	assert.True(t, res)
 	dirEntry.AssertExpectations(t)
 }
