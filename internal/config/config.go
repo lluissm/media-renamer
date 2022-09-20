@@ -45,6 +45,7 @@ type (
 	}
 )
 
+// Load loads the configuration from the provided yaml file
 func Load(bytes []byte) error {
 	err := yaml.Unmarshal(bytes, &fileTypes)
 	if err != nil {
@@ -59,10 +60,7 @@ func Load(bytes []byte) error {
 	return nil
 }
 
-func SupportedExtensions() []string {
-	return supportedExtensions
-}
-
+// FileConfig returns the configuration for a given extension, error if not found
 func FileConfig(ext string) (*FileType, error) {
 	for _, f := range fileTypes {
 		if f.Extension == ext {
@@ -75,7 +73,7 @@ func FileConfig(ext string) (*FileType, error) {
 // FileIsSupported returns true if the file extension is present in the config
 func FileIsSupported(path string) bool {
 	fileExtension := filepath.Ext(path)
-	for _, ext := range SupportedExtensions() {
+	for _, ext := range supportedExtensions {
 		if fileExtension == ext {
 			return true
 		}

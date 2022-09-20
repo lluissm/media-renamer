@@ -45,17 +45,6 @@ func TestLoad_Error(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestSupportedExtensions(t *testing.T) {
-	err := Load(configFile)
-	assert.NoError(t, err)
-
-	// Supported extensions are properly parsed
-	extensions := SupportedExtensions()
-	assert.Equal(t, 2, len(extensions))
-	assert.Equal(t, ".mov", extensions[0])
-	assert.Equal(t, ".jpeg", extensions[1])
-}
-
 func TestFileConfig_Success(t *testing.T) {
 	err := Load(configFile)
 	assert.NoError(t, err)

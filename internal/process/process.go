@@ -38,7 +38,7 @@ import (
 	"github.com/lluissm/media-renamer/internal/config"
 )
 
-// Folder process all files in a given path
+// process.Folder processes all files in a given path
 func Folder(et *exiftool.Exiftool, path string) error {
 	err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -70,7 +70,7 @@ func processFile(et *exiftool.Exiftool, path string) {
 		}
 
 		if err := tryRename(path, fileInfo); err != nil {
-			log.Printf("ERROR: %s", err.Error())
+			log.Printf("Error renaming %s", err.Error())
 		}
 	}
 }
@@ -128,7 +128,8 @@ func newFileName(dateFormat, date string) (string, error) {
 	return fmt.Sprintf("%04d_%02d_%02d_%02d_%02d_%02d", parseTime.Year(), parseTime.Month(), parseTime.Day(), parseTime.Hour(), parseTime.Minute(), parseTime.Second()), nil
 }
 
-// shouldIgnoreFile returns true if file should be ignored
+// shouldIgnoreFile returns true if the file is a folder, its extension is
+// not supported or is a hidden file (starts with .)
 func shouldIgnoreFile(path string, d fs.DirEntry) bool {
 	// Skip if directory
 	if d.IsDir() {
