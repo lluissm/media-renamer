@@ -21,53 +21,56 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-package main
+package options
 
 import (
-	_ "embed"
+	"errors"
+	"flag"
 	"fmt"
-	"os"
-
-	"log"
-
-	"github.com/barasher/go-exiftool"
-	"github.com/lluissm/media-renamer/internal/config"
-	"github.com/lluissm/media-renamer/internal/options"
-	"github.com/lluissm/media-renamer/internal/process"
 )
 
-//go:embed config.yml
-var configFile []byte
+const cmdName = "media-renamer"
 
-var version string = "development"
+// Options are the process.Options parsed from command line flags/args
+type Options struct {
+	ShowVersion bool
+	Path        string
+}
 
-func main() {
-	// Parse cli flags and arguments
-	options, err := options.Parse(os.Args)
-	if err != nil {
-		log.Fatalf("could not parse the cli args: %s", err.Error())
-	}
-	if options.ShowVersion {
-		fmt.Printf("version: %s\n", version)
-		os.Exit(0)
-	}
+// Parse returns the parsed Options from command line flags/args
+func Parse(osArgs []string) (*Options, error) {
 
-	// Load configuration
-	cfg, err := config.LoadConfig(configFile)
-	if err != nil {
-		log.Fatalf("Error loading configuration from file: %v\n", err)
+	flagSet := flag.NewFlagSet("mrn", flag.ExitOnError)
+	flagSet.Usage = func() {
+		fmt.Fprintf(flag.CommandLine.Output(), "\033[1;4mSYNOPSIS\033[0m\n\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "%s ~/Desktop/my-trip\n\n", cmdName)
+		fmt.Fprintf(flag.CommandLine.Output(), "\033[1;4mOPTIONS\033[0m\n\n")
+		flagSet.PrintDefaults()
 	}
 
-	// Initialize exifTool
-	et, err := exiftool.NewExiftool()
-	if err != nil {
-		log.Fatalf("Error intializing exiftool: %v\n", err)
-	}
-	defer et.Close()
+	showVersionFlag := flagSet.Bool("version", false, "Display version number")
 
-	// Process folder
-	path := options.Path
-	if err := process.Folder(et, cfg, path); err != nil {
-		log.Fatalf("Error processing folder %s: %v\n", path, err)
+	if err := flagSet.Parse(osArgs[1:]); err != nil {
+		return nil, err
 	}
+
+	args := flagSet.Args()
+
+	if *showVersionFlag {
+		return &Options{
+			true,
+			"",
+		}, nil
+	}
+
+	if len(args) < 1 {
+		return nil, errors.New("Missing arguments, please see documentation")
+	}
+
+	path := args[0]
+
+	return &Options{
+		*showVersionFlag,
+		path,
+	}, nil
 }
