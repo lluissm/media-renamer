@@ -123,7 +123,7 @@ func TestTryRename_Success(t *testing.T) {
 	}
 
 	renamer.On("Rename", path, mock.Anything).Return(nil).Once()
-	err := tryRename(path, cfg, &renamer, *fileInfo)
+	err := tryRename(path, cfg, &renamer, *fileInfo, false)
 	assert.NoError(t, err)
 	renamer.AssertExpectations(t)
 }
@@ -139,7 +139,7 @@ func TestTryRename_ErrorRenaming(t *testing.T) {
 	}
 
 	renamer.On("Rename", path, mock.Anything).Return(errors.New("error renaming")).Once()
-	err := tryRename(path, cfg, &renamer, *fileInfo)
+	err := tryRename(path, cfg, &renamer, *fileInfo, false)
 	assert.Error(t, err)
 	renamer.AssertExpectations(t)
 }
@@ -154,7 +154,7 @@ func TestTryRename_ErrorCannotFindDate(t *testing.T) {
 		Err:    nil,
 	}
 
-	err := tryRename(path, cfg, &renamer, *fileInfo)
+	err := tryRename(path, cfg, &renamer, *fileInfo, false)
 	assert.Error(t, err)
 }
 
@@ -168,7 +168,7 @@ func TestTryRename_ErrorWrongExtension(t *testing.T) {
 		Err:    nil,
 	}
 
-	err := tryRename(path, cfg, &renamer, *fileInfo)
+	err := tryRename(path, cfg, &renamer, *fileInfo, false)
 	assert.Error(t, err)
 }
 

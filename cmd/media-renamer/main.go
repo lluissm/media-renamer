@@ -67,7 +67,7 @@ func main() {
 
 	// Process folder
 	path := options.Path
-	if err := process.Folder(et, cfg, path); err != nil {
+	if err := process.Folder(et, cfg, path, options.Verbose); err != nil {
 		log.Fatalf("Error processing folder %s: %v\n", path, err)
 	}
 }

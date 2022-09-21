@@ -49,7 +49,7 @@ func (r *osRenamer) Rename(oldpath string, newpath string) error {
 }
 
 // process.Folder processes all files in a given path
-func Folder(et *exiftool.Exiftool, cfg *config.Config, path string) error {
+func Folder(et *exiftool.Exiftool, cfg *config.Config, path string, verbose bool) error {
 	err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -59,7 +59,7 @@ func Folder(et *exiftool.Exiftool, cfg *config.Config, path string) error {
 			return nil
 		}
 
-		processFile(et, cfg, path)
+		processFile(et, cfg, path, verbose)
 		return nil
 	})
 
@@ -70,17 +70,21 @@ func Folder(et *exiftool.Exiftool, cfg *config.Config, path string) error {
 }
 
 // processFile tries to rename a file according to its date metadata
-func processFile(et *exiftool.Exiftool, cfg *config.Config, path string) {
+func processFile(et *exiftool.Exiftool, cfg *config.Config, path string, verbose bool) {
 	fileInfos := et.ExtractMetadata(path)
 
 	for _, fileInfo := range fileInfos {
 		if fileInfo.Err != nil {
-			log.Printf("Error concerning %v: %v\n", fileInfo.File, fileInfo.Err)
+			if verbose {
+				log.Printf("Error concerning %v: %v\n", fileInfo.File, fileInfo.Err)
+			}
 			continue
 		}
 
-		if err := tryRename(path, cfg, &osRenamer{}, fileInfo); err != nil {
-			log.Printf("Error renaming %s", err.Error())
+		if err := tryRename(path, cfg, &osRenamer{}, fileInfo, verbose); err != nil {
+			if verbose {
+				log.Printf("Error renaming %s", err.Error())
+			}
 		}
 	}
 }
@@ -101,7 +105,7 @@ func tryGetDate(path string, fileType *config.FileType, key, value interface{}) 
 }
 
 // tryRename tries to rename a file according to its metadata
-func tryRename(path string, cfg *config.Config, renamer Renamer, fileInfo exiftool.FileMetadata) error {
+func tryRename(path string, cfg *config.Config, renamer Renamer, fileInfo exiftool.FileMetadata, verbose bool) error {
 	ext := filepath.Ext(path)
 	fileConfig, err := cfg.FileConfig(ext)
 	if err != nil {
@@ -118,7 +122,9 @@ func tryRename(path string, cfg *config.Config, renamer Renamer, fileInfo exifto
 			if err = renamer.Rename(path, newPath); err != nil {
 				return fmt.Errorf("Could not rename file %s to %s. %w", path, newPath, err)
 			} else {
-				log.Printf("Renamed %s to %s", path, newPath)
+				if verbose {
+					log.Printf("Renamed %s to %s", path, newPath)
+				}
 				return nil
 			}
 		}
@@ -131,7 +137,6 @@ func newFileName(dateFormat, date string) (string, error) {
 	parseTime, err := time.Parse(dateFormat, date)
 
 	if err != nil {
-		fmt.Println("Error parsing date")
 		return "", err
 	}
 
