@@ -21,53 +21,42 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-package main
+package options
 
 import (
-	_ "embed"
-	"fmt"
-	"os"
+	"testing"
 
-	"log"
-
-	"github.com/barasher/go-exiftool"
-	"github.com/lluissm/media-renamer/internal/config"
-	"github.com/lluissm/media-renamer/internal/options"
-	"github.com/lluissm/media-renamer/internal/process"
+	"github.com/stretchr/testify/assert"
 )
 
-//go:embed config.yml
-var configFile []byte
+const filePathArg = "a-file-path"
+const versionFlagName = "-version"
 
-var version string = "development"
+func TestErrorWhenMissingArgs(t *testing.T) {
+	args := []string{cmdName}
+	_, err := Parse(args)
+	assert.NotNil(t, err)
 
-func main() {
-	// Parse cli flags and arguments
-	options, err := options.Parse(os.Args)
-	if err != nil {
-		log.Fatalf("could not parse the cli args: %s", err.Error())
-	}
-	if options.ShowVersion {
-		fmt.Printf("version: %s\n", version)
-		os.Exit(0)
-	}
+	args = []string{cmdName, filePathArg}
+	_, err = Parse(args)
+	assert.Nil(t, err)
+}
 
-	// Load configuration
-	cfg, err := config.LoadConfig(configFile)
-	if err != nil {
-		log.Fatalf("Error loading configuration from file: %v\n", err)
-	}
+func TestVersion(t *testing.T) {
+	args := []string{cmdName, versionFlagName, filePathArg}
+	options, err := Parse(args)
+	assert.Nil(t, err)
+	assert.True(t, options.ShowVersion)
 
-	// Initialize exifTool
-	et, err := exiftool.NewExiftool()
-	if err != nil {
-		log.Fatalf("Error intializing exiftool: %v\n", err)
-	}
-	defer et.Close()
+	args = []string{cmdName, filePathArg}
+	options, err = Parse(args)
+	assert.Nil(t, err)
+	assert.False(t, options.ShowVersion)
+}
 
-	// Process folder
-	path := options.Path
-	if err := process.Folder(et, cfg, path); err != nil {
-		log.Fatalf("Error processing folder %s: %v\n", path, err)
-	}
+func TestPath(t *testing.T) {
+	args := []string{cmdName, filePathArg}
+	options, err := Parse(args)
+	assert.Nil(t, err)
+	assert.True(t, options.Path == filePathArg)
 }

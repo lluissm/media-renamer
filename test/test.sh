@@ -49,6 +49,13 @@ run_test() {
     delete_sample_project
 }
 
+run_version_test() {
+    output=$($CMD -version)
+    if [[ ! "$output" =~ "version:" ]]; then exit 1; fi
+}
+
 run_test
+
+run_version_test
 
 exit 0
