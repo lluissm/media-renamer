@@ -72,3 +72,16 @@ func TestVerbose(t *testing.T) {
 	assert.Nil(t, err)
 	assert.False(t, options.Verbose)
 }
+
+func TestCustomConfigFile(t *testing.T) {
+	customPath := "custom/path/to/file.yml"
+	args := []string{cmdName, "-c", customPath, filePathArg}
+	options, err := Parse(args)
+	assert.Nil(t, err)
+	assert.Equal(t, customPath, options.CustomConfigPath)
+
+	args = []string{cmdName, filePathArg}
+	options, err = Parse(args)
+	assert.Nil(t, err)
+	assert.Equal(t, "", options.CustomConfigPath)
+}
