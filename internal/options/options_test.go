@@ -60,3 +60,15 @@ func TestPath(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, options.Path == filePathArg)
 }
+
+func TestVerbose(t *testing.T) {
+	args := []string{cmdName, "-v", filePathArg}
+	options, err := Parse(args)
+	assert.Nil(t, err)
+	assert.True(t, options.Verbose)
+
+	args = []string{cmdName, filePathArg}
+	options, err = Parse(args)
+	assert.Nil(t, err)
+	assert.False(t, options.Verbose)
+}
