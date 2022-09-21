@@ -39,6 +39,28 @@ import (
 //go:embed testdata/config.yml
 var configFile []byte
 
+// File names
+const jpeg = ".jpeg"
+const validImagePath = "IMG_0001.jpeg"
+const imagePathWrongExtension = "IMG_0001.txt"
+const hiddenImagePath = ".hidden.jpeg"
+
+// JPEG
+const validDateKeyForJpeg = "CreateDate"
+const validDateValueForJpeg = "2019:08:05 14:12:13"
+const validDateFormatJpeg = "2006:01:02 15:04:05"
+const wrongDateKeyForJpeg = "unknown"
+const expectedFileNameForValidDateJpeg = "2019_08_05_14_12_13"
+
+// MOV
+const validDateFormatMOV = "2006:01:02 15:04:05-07:00"
+const validDateMOV = "2015:07:15 13:56:17+02:00"
+const expectedFileNameForValidDateMov = "2015_07_15_13_56_17"
+
+// Wrong dates
+const wrongDateFormat = "2022"
+const wrongDateValue = "wrong date"
+
 func getTestConfig() *config.Config {
 	cfg, err := config.LoadConfig(configFile)
 	if err == nil {
@@ -52,40 +74,27 @@ func getTestConfig() *config.Config {
 ///////////////////////////////////
 
 func TestTryGetDate_Success(t *testing.T) {
-	path := "IMG_0001.jpeg"
-	key := "CreateDate"
-	value := "2019:08:05 14:12:13"
-	expected := "2019_08_05_14_12_13"
-
-	fileConfig, err := getTestConfig().FileConfig(".jpeg")
+	fileConfig, err := getTestConfig().FileConfig(jpeg)
 	assert.NoError(t, err)
 
-	date, err := tryGetDate(path, fileConfig, key, value)
+	date, err := tryGetDate(validImagePath, fileConfig, validDateKeyForJpeg, validDateValueForJpeg)
 	assert.NoError(t, err)
-	assert.Equal(t, expected, date)
+	assert.Equal(t, expectedFileNameForValidDateJpeg, date)
 }
 
 func TestTryGetDate_ErrorDateNotExisting(t *testing.T) {
-	path := "IMG_0001.jpg"
-	key := "WrongKey"
-	value := "2019:08:05 14:12:13"
-
-	fileConfig, err := getTestConfig().FileConfig(".jpeg")
+	fileConfig, err := getTestConfig().FileConfig(jpeg)
 	assert.NoError(t, err)
 
-	_, err = tryGetDate(path, fileConfig, key, value)
+	_, err = tryGetDate(imagePathWrongExtension, fileConfig, wrongDateKeyForJpeg, validDateValueForJpeg)
 	assert.Error(t, err)
 }
 
 func TestTryGetDate_ErrorCannotParseDate(t *testing.T) {
-	path := "IMG_0001.jpg"
-	key := "CreateDate"
-	value := "2022"
-
-	fileConfig, err := getTestConfig().FileConfig(".jpeg")
+	fileConfig, err := getTestConfig().FileConfig(jpeg)
 	assert.NoError(t, err)
 
-	_, err = tryGetDate(path, fileConfig, key, value)
+	_, err = tryGetDate(imagePathWrongExtension, fileConfig, validDateKeyForJpeg, wrongDateValue)
 	assert.Error(t, err)
 }
 
@@ -105,11 +114,11 @@ func (d *renamerMock) Rename(oldpath string, newpath string) error {
 
 func TestTryRename_Success(t *testing.T) {
 	cfg := getTestConfig()
-	path := "IMG_0001.jpeg"
+	path := validImagePath
 	renamer := renamerMock{}
 	fileInfo := &exiftool.FileMetadata{
 		File:   path,
-		Fields: map[string]interface{}{"CreateDate": "2019:08:05 14:12:13"},
+		Fields: map[string]interface{}{validDateKeyForJpeg: validDateValueForJpeg},
 		Err:    nil,
 	}
 
@@ -121,11 +130,11 @@ func TestTryRename_Success(t *testing.T) {
 
 func TestTryRename_ErrorRenaming(t *testing.T) {
 	cfg := getTestConfig()
-	path := "IMG_0001.jpeg"
+	path := validImagePath
 	renamer := renamerMock{}
 	fileInfo := &exiftool.FileMetadata{
 		File:   path,
-		Fields: map[string]interface{}{"CreateDate": "2019:08:05 14:12:13"},
+		Fields: map[string]interface{}{validDateKeyForJpeg: validDateValueForJpeg},
 		Err:    nil,
 	}
 
@@ -137,11 +146,11 @@ func TestTryRename_ErrorRenaming(t *testing.T) {
 
 func TestTryRename_ErrorCannotFindDate(t *testing.T) {
 	cfg := getTestConfig()
-	path := "IMG_0001.jpeg"
+	path := validImagePath
 	renamer := renamerMock{}
 	fileInfo := &exiftool.FileMetadata{
 		File:   path,
-		Fields: map[string]interface{}{"AnotherKey": "2019:08:05 14:12:13"},
+		Fields: map[string]interface{}{wrongDateKeyForJpeg: validDateValueForJpeg},
 		Err:    nil,
 	}
 
@@ -151,11 +160,11 @@ func TestTryRename_ErrorCannotFindDate(t *testing.T) {
 
 func TestTryRename_ErrorWrongExtension(t *testing.T) {
 	cfg := getTestConfig()
-	path := "IMG_0001.png"
+	path := imagePathWrongExtension
 	renamer := renamerMock{}
 	fileInfo := &exiftool.FileMetadata{
 		File:   path,
-		Fields: map[string]interface{}{"AnotherKey": "2019:08:05 14:12:13"},
+		Fields: map[string]interface{}{wrongDateKeyForJpeg: validDateValueForJpeg},
 		Err:    nil,
 	}
 
@@ -168,33 +177,24 @@ func TestTryRename_ErrorWrongExtension(t *testing.T) {
 ///////////////////////////////////
 
 func TestNewFileName_JPEG(t *testing.T) {
-	DateFormatJPEG := "2006:01:02 15:04:05"
-
-	dateJPEG := "2019:08:05 14:12:13"
-	expected := "2019_08_05_14_12_13"
-
-	fnameJPEG, err := newFileName(DateFormatJPEG, dateJPEG)
+	fnameJPEG, err := newFileName(validDateFormatJpeg, validDateValueForJpeg)
 	assert.NoError(t, err)
-	assert.Equal(t, fnameJPEG, expected)
+	assert.Equal(t, fnameJPEG, expectedFileNameForValidDateJpeg)
 }
 
 func TestNewFileName_MOV(t *testing.T) {
-	DateFormatMOV := "2006:01:02 15:04:05-07:00"
+	dateMOV := validDateMOV
+	expected := expectedFileNameForValidDateMov
 
-	dateMOV := "2015:07:15 13:56:17+02:00"
-	expected := "2015_07_15_13_56_17"
-
-	fnameMOV, err := newFileName(DateFormatMOV, dateMOV)
+	fnameMOV, err := newFileName(validDateFormatMOV, dateMOV)
 	assert.NoError(t, err)
 	assert.Equal(t, fnameMOV, expected)
 }
 
 func TestNewFileName_Error(t *testing.T) {
-	WrongDateFormat := "2012:12:12"
+	dateMOV := validDateMOV
 
-	dateMOV := "2015:07:15 13:56:17+02:00"
-
-	_, err := newFileName(WrongDateFormat, dateMOV)
+	_, err := newFileName(wrongDateFormat, dateMOV)
 	assert.Error(t, err)
 }
 
@@ -217,33 +217,29 @@ func (d *dirEntryMock) Info() (os.FileInfo, error) { return nil, nil }
 
 func TestShouldIgnoreFile(t *testing.T) {
 	cfg := getTestConfig()
-
 	dirEntry := &dirEntryMock{}
-	hiddenFilePath := ".hidden.jpeg"
-	validFilePath := "IMG001.jpeg"
-	validFilePathWrongExtension := "document.docx"
 
 	// No folder, not hidden, supported extension
 	dirEntry.On("IsDir").Return(false).Once()
-	res := shouldIgnoreFile(validFilePath, cfg, dirEntry)
+	res := shouldIgnoreFile(validImagePath, cfg, dirEntry)
 	assert.False(t, res)
 	dirEntry.AssertExpectations(t)
 
 	// No folder, not hidden, non-supported extension
 	dirEntry.On("IsDir").Return(false).Once()
-	res = shouldIgnoreFile(validFilePathWrongExtension, cfg, dirEntry)
+	res = shouldIgnoreFile(imagePathWrongExtension, cfg, dirEntry)
 	assert.True(t, res)
 	dirEntry.AssertExpectations(t)
 
 	// No folder, hidden, supported extension
 	dirEntry.On("IsDir").Return(false).Once()
-	res = shouldIgnoreFile(hiddenFilePath, cfg, dirEntry)
+	res = shouldIgnoreFile(hiddenImagePath, cfg, dirEntry)
 	assert.True(t, res)
 	dirEntry.AssertExpectations(t)
 
 	// A folder
 	dirEntry.On("IsDir").Return(true).Once()
-	res = shouldIgnoreFile(validFilePath, cfg, dirEntry)
+	res = shouldIgnoreFile(validImagePath, cfg, dirEntry)
 	assert.True(t, res)
 	dirEntry.AssertExpectations(t)
 }
