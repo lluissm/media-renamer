@@ -33,9 +33,10 @@ const cmdName = "media-renamer"
 
 // Options are the process.Options parsed from command line flags/args
 type Options struct {
-	ShowVersion bool
-	Verbose     bool
-	Path        string
+	ShowVersion      bool
+	Verbose          bool
+	Path             string
+	CustomConfigPath string
 }
 
 // Parse returns the parsed Options from command line flags/args
@@ -51,6 +52,7 @@ func Parse(osArgs []string) (*Options, error) {
 
 	showVersionFlag := flagSet.Bool("version", false, "Display version number")
 	verboseFlag := flagSet.Bool("v", false, "Diplay detailed information of the processing during execution")
+	configFileFlag := flagSet.String("c", "", "Path to custom configuration file (optional)")
 
 	if err := flagSet.Parse(osArgs[1:]); err != nil {
 		return nil, err
@@ -62,6 +64,7 @@ func Parse(osArgs []string) (*Options, error) {
 		return &Options{
 			true,
 			true,
+			"",
 			"",
 		}, nil
 	}
@@ -76,5 +79,6 @@ func Parse(osArgs []string) (*Options, error) {
 		*showVersionFlag,
 		*verboseFlag,
 		path,
+		*configFileFlag,
 	}, nil
 }

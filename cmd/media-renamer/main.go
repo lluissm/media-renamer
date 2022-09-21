@@ -37,7 +37,7 @@ import (
 )
 
 //go:embed config.yml
-var configFile []byte
+var defaultConfigFile []byte
 
 var version string = "development"
 
@@ -53,6 +53,14 @@ func main() {
 	}
 
 	// Load configuration
+	var configFile = defaultConfigFile
+	if options.CustomConfigPath != "" {
+		customConfig, err := os.ReadFile(options.CustomConfigPath)
+		if err != nil {
+			log.Fatalf("Could not load custom config file %s", options.CustomConfigPath)
+		}
+		configFile = customConfig
+	}
 	cfg, err := config.LoadConfig(configFile)
 	if err != nil {
 		log.Fatalf("Error loading configuration from file: %v\n", err)
